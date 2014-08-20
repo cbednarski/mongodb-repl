@@ -26,7 +26,7 @@ MongoDB's replica sets have a few requirements:
 1. Each node must be referenced by hostname (not ip address). See `etc.hosts`.
 2. Each node must share the same `keyFile` which contains a passphrase. See `keyfile`.
 3. Each node must share the same `replSet` name. See `mongod.conf`.
-4. We will bring up 3 nodes. On one node, we call `rs.initialize()` to create a replica set and then `rs.add()` the other two. See `Vagrantfile` and `replica-*.js`.
+4. The demo will bring up 3 nodes. On one node, we call `rs.initialize()` to create a replica set and then call `rs.add()` for the other two nodes. See `Vagrantfile` and `replica-*.js`.
 
 Replication has two essential components. First, nodes in your replica set must be configured to communicate with each other, as in 1, 2, and 3 above. Second, you have to perform some orchestration to initiate the replica set and add members, as in 4. When you add members, a leader election will happen and after the dust settles you can read / write to your replica set.
 
