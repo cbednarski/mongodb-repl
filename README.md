@@ -11,35 +11,44 @@ A demo configuration and 3-vm setup for MongoDB replication. Requires [Vagrant 1
     $ vagrant ssh db1 -c 'tail -f /var/log/mongodb/mongod.log'
     $ vagrant ssh db2 -c 'tail -f /var/log/mongodb/mongod.log'
     $ vagrant ssh db3 -c 'tail -f /var/log/mongodb/mongod.log'
+    $ vagrant provision
 
 ### See the replica set status
 
-    open http://10.7.0.2:28017/_replSet
+    open http://10.7.0.2:28017/_replSet # db1
+    open http://10.7.0.3:28017/_replSet # db2
+    open http://10.7.0.4:28017/_replSet # db3
 
 ## How it works
 
-MongoDB requires a few things to run in replication mode.
+MongoDB's replica sets have a few requirements:
 
-1. All instances must be reference by hostname (not ip address). See `etc.hosts`.
-2. Replication members must share a keyfile which contains a password. See `keyfile`.
-3. Replication members must share a configuration file that specifies the `replSet` name. See `mongod.conf`.
-4. We bring up 3 nodes. On one node, we call `rs.initialize()` to create a replica set and then `rs.add()` the other two. See `Vagrantfile`.
+1. Each node must be referenced by hostname (not ip address). See `etc.hosts`.
+2. Each node must share the same `keyFile` which contains a passphrase. See `keyfile`.
+3. Each node must share the same `replSet` name. See `mongod.conf`.
+4. We will bring up 3 nodes. On one node, we call `rs.initialize()` to create a replica set and then `rs.add()` the other two. See `Vagrantfile` and `replica-*.js`.
+
+Replication has two essential components. First, nodes in your replica set must be configured to communicate with each other, as in 1, 2, and 3 above. Second, you have to perform some orchestration to initiate the replica set and add members, as in 4. When you add members, a leader election will happen and after the dust settles you can read / write to your replica set.
+
+### Some notes about failover and production environments
+
+This demo is simplistic and many variables like network latency, load, and data volume are not present. In production, these factors may contribute to poor performance, slow leader elections, eventual consistency in secondary reads, and sometimes a [rollback scenario](http://docs.mongodb.org/manual/core/replica-set-rollbacks/). The latter two scenarios can be (mostly) avoided using the ["replica acknowledged" write concern](http://docs.mongodb.org/manual/core/write-concern/#write-concern-replica-acknowledged).
+
+Write operations made to the replica set are stored in the primary node's [oplog](http://docs.mongodb.org/manual/core/replica-set-oplog/), which is then replicated to secondary nodes. If a node fails it may be able to use the oplog to catch up. If entries in the oplog expire the failed node becomes stale and must be [resynced](http://docs.mongodb.org/manual/tutorial/resync-replica-set-member/). If you add a completely fresh node you will need to perform an [initial sync](http://docs.mongodb.org/manual/core/replica-set-sync/).
+
+When a primary node fails, failover may take [up to 60 seconds](http://docs.mongodb.org/manual/faq/replica-sets/#how-long-does-replica-set-failover-take). During this time the replica set is not available for writes, but may be available for reads depending on your [read preference](http://docs.mongodb.org/manual/reference/read-preference/).
 
 Note: Most config file settings can be set as mongod startup params instead. See the mongo docs for more info. [config files](http://docs.mongodb.org/manual/reference/configuration-options/) | [mongod params](http://docs.mongodb.org/manual/reference/program/mongod/)
-
-There are two essential pieces to replication. The first is that your nodes must be configured for replication so they can identify and authenticate with eachother. The second is that you have to initiate the replica set and add members. When you do this, a leader election will happen and after the dust settles you can start to read / write to your replica set.
-
-Write operations made to the replica set are stored in the [oplog](http://docs.mongodb.org/manual/core/replica-set-oplog/) (similar to MySQL's binlog). When a leader election occurs and a new primary is elected, it will need to resync its oplog to other slaves. It may take some time for this to happen and until then your cluster will be unavailable for writes. If the max oplog size is reached data will be truncated and in this case you will need to [resync](http://docs.mongodb.org/manual/tutorial/resync-replica-set-member/) to bring a new slave online.
 
 ## Play around
 
 ### Replication
 
-Write some data. Query it from a secondary node.
+Write some data to the primary. Query it from a secondary node.
 
 ### Leader Election
 
-Stop the primary. Bring it back up. Watch what happens. (Your primary may not be `db3`.)
+Stop the primary. Bring it back up. Watch what happens. (Your primary may not be `db3`.) See the replica set status via <http://10.7.0.2:28017/_replSet>.
 
     $ vagrant ssh db3 -c 'sudo service stop mongod'
     $ vagrant ssh db3 -c 'sudo service start mongod'
@@ -54,4 +63,4 @@ Stop the primary. Bring it back up. Watch what happens. (Your primary may not be
 
 ## Warning
 
-The configuration is not secure and is not tuned for production. Please do not copy-paste `mongod.conf` onto production systems.
+The demo configuration is not secure and is not tuned for production. Please do not copy-paste this `mongod.conf` onto production systems.
