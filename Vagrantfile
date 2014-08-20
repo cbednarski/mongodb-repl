@@ -22,6 +22,7 @@ Vagrant.configure("2") do |config|
     db3.vm.provision "shell", inline: "hostname db3"
     db3.vm.provision "shell", inline: "bash /vagrant/install-mongodb.sh"
     db3.vm.provision "shell", inline: "sleep 1 && mongo /vagrant/replica-1.js"
+    # Add additional nodes slowly so we avoid a race condition in leader election.
     db3.vm.provision "shell", inline: "sleep 3 && mongo /vagrant/replica-2.js"
     db3.vm.provision "shell", inline: "sleep 3 && mongo /vagrant/replica-3.js"
   end

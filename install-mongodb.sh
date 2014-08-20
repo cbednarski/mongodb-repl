@@ -19,7 +19,7 @@ cp /vagrant/mongod.conf /etc/mongod.conf
 # Add the replication cluster key
 mkdir -p /etc/mongod
 cp /vagrant/keyfile /etc/mongod/keyfile
-chown mongodb /etc/mongod/keyfile && chmod 0700 /etc/mongod/keyfile
+chown mongodb /etc/mongod/keyfile && chmod 0400 /etc/mongod/keyfile
 
 # Restart mongo so our config changes stick
 service mongod restart
