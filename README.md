@@ -4,14 +4,16 @@ A demo configuration and 3-vm setup for MongoDB replication. Requires [Vagrant 1
 
 ## Try it
 
-    $ vagrant up
+    git clone https://github.com/cbednarski/mongodb-repl
+    cd mongodb-repl
+    vagrant up
 
 ### Watch the logs to see leader election
 
-    $ vagrant ssh db1 -c 'tail -f /var/log/mongodb/mongod.log'
-    $ vagrant ssh db2 -c 'tail -f /var/log/mongodb/mongod.log'
-    $ vagrant ssh db3 -c 'tail -f /var/log/mongodb/mongod.log'
-    $ vagrant provision
+    vagrant ssh db1 -c 'tail -f /var/log/mongodb/mongod.log'
+    vagrant ssh db2 -c 'tail -f /var/log/mongodb/mongod.log'
+    vagrant ssh db3 -c 'tail -f /var/log/mongodb/mongod.log'
+    vagrant provision
 
 ### See the replica set status
 
@@ -28,7 +30,7 @@ MongoDB's replica sets have a few requirements:
 3. Each node must share the same `replSet` name. See `mongod.conf`.
 4. The demo will bring up 3 nodes. On one node, we call `rs.initialize()` to create a replica set and then call `rs.add()` for the other two nodes. See `Vagrantfile` and `replica-*.js`.
 
-Replication has two essential components. First, nodes in your replica set must be configured to communicate with each other, as in 1, 2, and 3 above. Second, you have to perform some orchestration to initiate the replica set and add members, as in 4. When you add members, a leader election will happen and after the dust settles you can read / write to your replica set.
+Replication has two essential components. First, you must configure nodes in your replica set to communicate with each other, as in 1, 2, and 3 above. Second, you must perform some orchestration to initiate the replica set and add members, as in 4. When you initially add members, a leader election will happen and after the dust settles you can read / write to your replica set.
 
 ### Some notes about failover and production environments
 
@@ -50,15 +52,15 @@ Write some data to the primary. Query it from a secondary node.
 
 Stop the primary. Bring it back up. Watch what happens. (Your primary may not be `db3`.) See the replica set status via <http://10.7.0.2:28017/_replSet>.
 
-    $ vagrant ssh db3 -c 'sudo service stop mongod'
-    $ vagrant ssh db3 -c 'sudo service start mongod'
+    vagrant ssh db3 -c 'sudo service stop mongod'
+    vagrant ssh db3 -c 'sudo service start mongod'
 
 ### Rebuild a node
 
-    $ vagrant destroy -f db3
-    $ vagrant up db3
-    $ vagrant ssh db2
-    $ mongo
+    vagrant destroy -f db3
+    vagrant up db3
+    vagrant ssh db2
+    mongo
     cluster1:PRIMARY> rs.add('db3')
 
 ## Warning
